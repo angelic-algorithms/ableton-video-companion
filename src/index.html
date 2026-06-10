@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ableton Video Companion</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Mac-first prototype</p>
+          <h1>Ableton Video Companion</h1>
+        </div>
+        <div class="transport">
+          <button id="recordSelectedButton" class="primary">Record Selected</button>
+          <button id="recordAllButton">Record Armed</button>
+          <button id="stopButton" disabled>Stop</button>
+        </div>
+      </header>
+
+      <section class="control-strip" aria-label="Session controls">
+        <label>
+          Camera
+          <select id="cameraSelect"></select>
+        </label>
+        <label>
+          Frames
+          <input id="frameCountInput" type="number" min="1" max="16" value="4">
+        </label>
+        <label>
+          Loop length
+          <input id="loopLengthInput" type="number" min="1" value="8">
+          <span>bars</span>
+        </label>
+        <label>
+          Tempo
+          <input id="tempoInput" type="number" min="20" max="300" value="120">
+          <span>BPM</span>
+        </label>
+        <label>
+          Ableton mix
+          <input id="audioImport" type="file" accept="audio/*">
+        </label>
+      </section>
+
+      <section class="workspace">
+        <aside class="sidebar" aria-label="Frame routing">
+          <h2>Track routing</h2>
+          <div id="routingList" class="routing-list"></div>
+        <div class="bridge-status">
+            <h2>Camera status</h2>
+            <p id="cameraStatus">Waiting for camera permission.</p>
+          </div>
+          <div class="bridge-status">
+            <h2>Ableton bridge</h2>
+            <p id="bridgeStatus">Prototype mode. MIDI/OSC sync and live mix watching come next.</p>
+          </div>
+        </aside>
+
+        <section class="stage" aria-label="Video frame grid">
+          <div id="frameGrid" class="frame-grid"></div>
+        </section>
+      </section>
+
+      <footer class="timeline">
+        <div>
+          <strong>Session audio</strong>
+          <p id="audioStatus">Import a rough mix or Ableton export to preview with the video wall.</p>
+        </div>
+        <audio id="sessionAudio" controls></audio>
+      </footer>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

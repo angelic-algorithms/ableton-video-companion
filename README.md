@@ -39,12 +39,15 @@ camera stream is available.
 
 ## Sensible next steps
 
-1. Move the prototype into a desktop shell, most likely Tauri or Electron.
-2. Add project save/load so takes, frame routing, and audio paths persist.
-3. Add file watching for a chosen Ableton mix export.
-4. Add FFmpeg composition/export for the 1 to 16 frame video wall.
-5. Build a small Max for Live bridge device for transport, tempo, track names,
+1. Test the first Ableton MIDI bridge with the Mac IAC Driver.
+2. Move the prototype into a desktop shell, most likely Tauri or Electron.
+3. Add project save/load so takes, frame routing, and audio paths persist.
+4. Add file watching for a chosen Ableton mix export.
+5. Add FFmpeg composition/export for the 1 to 16 frame video wall.
+6. Build a small Max for Live bridge device for transport, tempo, track names,
    and record triggers.
 
 See [docs/ableton-integration-plan.md](./docs/ableton-integration-plan.md) for the
 full roadmap.
+See [docs/ableton-midi-setup.md](./docs/ableton-midi-setup.md) for the first MIDI
+bridge setup.

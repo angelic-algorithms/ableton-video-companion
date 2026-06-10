@@ -4,7 +4,10 @@ const state = {
   frames: [],
   stream: null,
   activeRecorders: new Map(),
-  recordings: new Map()
+  recordings: new Map(),
+  midiAccess: null,
+  midiInputId: "",
+  midiConnected: false
 };
 
 const els = {
@@ -21,7 +24,10 @@ const els = {
   sessionAudio: document.querySelector("#sessionAudio"),
   audioStatus: document.querySelector("#audioStatus"),
   cameraStatus: document.querySelector("#cameraStatus"),
-  bridgeStatus: document.querySelector("#bridgeStatus")
+  bridgeStatus: document.querySelector("#bridgeStatus"),
+  connectMidiButton: document.querySelector("#connectMidiButton"),
+  midiInputSelect: document.querySelector("#midiInputSelect"),
+  midiLog: document.querySelector("#midiLog")
 };
 
 function makeFrames(count) {
@@ -160,6 +166,103 @@ function stopRecording() {
   });
 }
 
+async function connectMidi() {
+  if (!navigator.requestMIDIAccess) {
+    els.bridgeStatus.textContent = "Web MIDI is not available in this browser. Try Chrome or Edge.";
+    return;
+  }
+
+  state.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+  state.midiAccess.addEventListener("statechange", refreshMidiInputs);
+  state.midiConnected = true;
+  els.bridgeStatus.textContent = "MIDI connected. Choose the Ableton/IAC input below.";
+  els.connectMidiButton.textContent = "Refresh MIDI";
+  refreshMidiInputs();
+}
+
+function refreshMidiInputs() {
+  if (!state.midiAccess) return;
+
+  const inputs = Array.from(state.midiAccess.inputs.values());
+  els.midiInputSelect.disabled = inputs.length === 0;
+  els.midiInputSelect.innerHTML = inputs.length
+    ? inputs.map((input) => `
+        <option value="${input.id}" ${input.id === state.midiInputId ? "selected" : ""}>
+          ${input.name || "Unnamed MIDI input"}
+        </option>
+      `).join("")
+    : "<option>No MIDI inputs found</option>";
+
+  const preferredInput = inputs.find((input) => input.id === state.midiInputId) || inputs[0];
+  if (preferredInput) selectMidiInput(preferredInput.id);
+}
+
+function selectMidiInput(inputId) {
+  if (!state.midiAccess) return;
+
+  state.midiAccess.inputs.forEach((input) => {
+    input.onmidimessage = null;
+  });
+
+  const input = state.midiAccess.inputs.get(inputId);
+  if (!input) return;
+
+  state.midiInputId = inputId;
+  input.onmidimessage = handleMidiMessage;
+  els.midiInputSelect.value = inputId;
+  els.bridgeStatus.textContent = `Listening to ${input.name || "selected MIDI input"}.`;
+  addMidiLog(`Listening: ${input.name || inputId}`);
+}
+
+function handleMidiMessage(event) {
+  const [status, data1 = 0, data2 = 0] = event.data;
+  const command = status & 0xf0;
+  const messageType = status & 0xff;
+
+  if (messageType === 0xfa) {
+    recordArmedFramesFromMidi();
+    addMidiLog("MIDI Start -> record armed frames");
+    return;
+  }
+
+  if (messageType === 0xfc) {
+    stopRecording();
+    addMidiLog("MIDI Stop -> stop recording");
+    return;
+  }
+
+  if (command === 0x90 && data2 > 0) {
+    const frameId = data1 - 35;
+    if (frameId >= 1 && frameId <= state.frameCount) {
+      selectAndArmFrame(frameId);
+      addMidiLog(`Note ${data1} -> frame ${frameId}`);
+    }
+  }
+}
+
+function selectAndArmFrame(frameId) {
+  state.selectedFrameId = frameId;
+  state.frames.forEach((frame) => {
+    frame.armed = frame.id === frameId;
+  });
+  render();
+}
+
+function recordArmedFramesFromMidi() {
+  const armedIds = state.frames.filter((frame) => frame.armed && !frame.muted).map((frame) => frame.id);
+  startRecording(armedIds.length ? armedIds : [state.selectedFrameId]);
+}
+
+function addMidiLog(message) {
+  const item = document.createElement("li");
+  item.textContent = `${new Date().toLocaleTimeString()} ${message}`;
+  els.midiLog.prepend(item);
+
+  while (els.midiLog.children.length > 8) {
+    els.midiLog.lastElementChild?.remove();
+  }
+}
+
 function updateTransport(isRecording) {
   const cameraReady = Boolean(state.stream);
   els.recordSelectedButton.disabled = isRecording || !cameraReady;
@@ -234,6 +337,16 @@ els.audioImport.addEventListener("change", () => {
   if (!file) return;
   els.sessionAudio.src = URL.createObjectURL(file);
   els.audioStatus.textContent = `${file.name} loaded. Later, the desktop app will watch Ableton's mix export and refresh this automatically.`;
+});
+
+els.connectMidiButton.addEventListener("click", () => {
+  connectMidi().catch((error) => {
+    els.bridgeStatus.textContent = `MIDI unavailable: ${error.message}`;
+  });
+});
+
+els.midiInputSelect.addEventListener("change", () => {
+  selectMidiInput(els.midiInputSelect.value);
 });
 
 function showCameraError(error) {

@@ -107,6 +107,12 @@ h2 {
   gap: 0.3rem;
 }
 
+.control-strip .inline-toggle {
+  align-items: center;
+  display: flex;
+  min-height: 2.5rem;
+}
+
 .control-strip input,
 .control-strip select {
   background: #191b20;
@@ -300,6 +306,10 @@ video {
 audio {
   max-width: 460px;
   width: 45vw;
+}
+
+.hidden-audio {
+  display: none;
 }
 
 @media (max-width: 900px) {

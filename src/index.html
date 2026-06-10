@@ -43,6 +43,14 @@
           Ableton mix
           <input id="audioImport" type="file" accept="audio/*">
         </label>
+        <label>
+          Ableton audio input
+          <select id="audioInputSelect"></select>
+        </label>
+        <label class="inline-toggle">
+          <input id="audioMonitorToggle" type="checkbox">
+          Monitor live audio
+        </label>
       </section>
 
       <section class="workspace">
@@ -89,6 +97,7 @@
           <p id="audioStatus">Import a rough mix or Ableton export to preview with the video wall.</p>
         </div>
         <audio id="sessionAudio" controls></audio>
+        <audio id="liveAudioMonitor" class="hidden-audio" autoplay></audio>
       </footer>
     </main>
 

@@ -3,8 +3,10 @@ const state = {
   selectedFrameId: 1,
   frames: [],
   stream: null,
+  audioStream: null,
   activeRecorders: new Map(),
   recordings: new Map(),
+  wallAudio: null,
   midiAccess: null,
   midiInputId: "",
   midiConnected: false,
@@ -22,7 +24,10 @@ const els = {
   frameGrid: document.querySelector("#frameGrid"),
   routingList: document.querySelector("#routingList"),
   audioImport: document.querySelector("#audioImport"),
+  audioInputSelect: document.querySelector("#audioInputSelect"),
+  audioMonitorToggle: document.querySelector("#audioMonitorToggle"),
   sessionAudio: document.querySelector("#sessionAudio"),
+  liveAudioMonitor: document.querySelector("#liveAudioMonitor"),
   audioStatus: document.querySelector("#audioStatus"),
   cameraStatus: document.querySelector("#cameraStatus"),
   bridgeStatus: document.querySelector("#bridgeStatus"),
@@ -105,21 +110,48 @@ async function initializeCamera(deviceId) {
 
   state.stream = await navigator.mediaDevices.getUserMedia(constraints);
   els.cameraStatus.textContent = "Camera connected. Empty frames show the live preview.";
-  await refreshCameras();
+  await refreshMediaDevices();
   attachLiveStreamToEmptyFrames();
   updateTransport(false);
 }
 
-async function refreshCameras() {
+async function initializeAudioInput(deviceId) {
+  if (state.audioStream) {
+    state.audioStream.getTracks().forEach((track) => track.stop());
+  }
+
+  const constraints = {
+    audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+    video: false
+  };
+
+  state.audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+  els.liveAudioMonitor.srcObject = state.audioStream;
+  els.liveAudioMonitor.muted = !els.audioMonitorToggle.checked;
+  els.audioStatus.textContent = "Live Ableton audio input connected. Pick BlackHole here after routing Ableton to it.";
+  await refreshMediaDevices();
+}
+
+async function refreshMediaDevices() {
   const devices = await navigator.mediaDevices.enumerateDevices();
   const cameras = devices.filter((device) => device.kind === "videoinput");
+  const audioInputs = devices.filter((device) => device.kind === "audioinput");
   const currentDeviceId = state.stream?.getVideoTracks()[0]?.getSettings().deviceId;
+  const currentAudioDeviceId = state.audioStream?.getAudioTracks()[0]?.getSettings().deviceId;
 
   els.cameraSelect.innerHTML = cameras.map((camera, index) => `
     <option value="${camera.deviceId}" ${camera.deviceId === currentDeviceId ? "selected" : ""}>
       ${camera.label || `Camera ${index + 1}`}
     </option>
   `).join("");
+
+  els.audioInputSelect.innerHTML = audioInputs.length
+    ? audioInputs.map((audioInput, index) => `
+        <option value="${audioInput.deviceId}" ${audioInput.deviceId === currentAudioDeviceId ? "selected" : ""}>
+          ${audioInput.label || `Audio input ${index + 1}`}
+        </option>
+      `).join("")
+    : "<option>No audio inputs found</option>";
 }
 
 function attachLiveStreamToEmptyFrames() {
@@ -136,7 +168,8 @@ function startRecording(frameIds) {
 
   frameIds.forEach((frameId) => {
     const chunks = [];
-    const recorder = new MediaRecorder(state.stream, { mimeType: getSupportedMimeType() });
+    const recordingStream = createRecordingStream();
+    const recorder = new MediaRecorder(recordingStream, { mimeType: getSupportedMimeType() });
     recorder.addEventListener("dataavailable", (event) => {
       if (event.data.size > 0) chunks.push(event.data);
     });
@@ -144,7 +177,12 @@ function startRecording(frameIds) {
       const blob = new Blob(chunks, { type: recorder.mimeType });
       const oldRecording = state.recordings.get(frameId);
       if (oldRecording) URL.revokeObjectURL(oldRecording.url);
-      state.recordings.set(frameId, { blob, url: URL.createObjectURL(blob), createdAt: Date.now() });
+      state.recordings.set(frameId, {
+        blob,
+        url: URL.createObjectURL(blob),
+        createdAt: Date.now(),
+        hasAudio: recordingStream.getAudioTracks().length > 0
+      });
       state.activeRecorders.delete(frameId);
       updateTransport(false);
       render();
@@ -155,6 +193,14 @@ function startRecording(frameIds) {
 
   updateTransport(true);
   render();
+}
+
+function createRecordingStream() {
+  const tracks = [
+    ...state.stream.getVideoTracks(),
+    ...(state.audioStream ? state.audioStream.getAudioTracks() : [])
+  ];
+  return new MediaStream(tracks);
 }
 
 function getSupportedMimeType() {
@@ -285,6 +331,16 @@ function startWallPlayback() {
   if (els.sessionAudio.src) {
     els.sessionAudio.currentTime = 0;
     els.sessionAudio.play().catch(() => {});
+    return;
+  }
+
+  const capturedAudioRecording = Array.from(state.recordings.values()).find((recording) => recording.hasAudio);
+  if (capturedAudioRecording) {
+    if (!state.wallAudio || state.wallAudio.src !== capturedAudioRecording.url) {
+      state.wallAudio = new Audio(capturedAudioRecording.url);
+    }
+    state.wallAudio.currentTime = 0;
+    state.wallAudio.play().catch(() => {});
   }
 }
 
@@ -298,6 +354,11 @@ function stopWallPlayback() {
   if (els.sessionAudio.src) {
     els.sessionAudio.pause();
     els.sessionAudio.currentTime = 0;
+  }
+
+  if (state.wallAudio) {
+    state.wallAudio.pause();
+    state.wallAudio.currentTime = 0;
   }
 }
 
@@ -331,6 +392,17 @@ els.frameCountInput.addEventListener("change", updateFrameCount);
 
 els.cameraSelect.addEventListener("change", () => {
   initializeCamera(els.cameraSelect.value).catch(showCameraError);
+});
+
+els.audioInputSelect.addEventListener("change", () => {
+  initializeAudioInput(els.audioInputSelect.value).catch(showAudioError);
+});
+
+els.audioMonitorToggle.addEventListener("change", () => {
+  els.liveAudioMonitor.muted = !els.audioMonitorToggle.checked;
+  if (els.audioMonitorToggle.checked && state.audioStream) {
+    els.liveAudioMonitor.play().catch(() => {});
+  }
 });
 
 els.recordSelectedButton.addEventListener("click", () => {
@@ -408,7 +480,13 @@ function showCameraError(error) {
   updateTransport(false);
 }
 
+function showAudioError(error) {
+  state.audioStream = null;
+  els.audioStatus.textContent = `Live audio unavailable: ${error.message}`;
+}
+
 makeFrames(state.frameCount);
 render();
 updateTransport(false);
 initializeCamera().catch(showCameraError);
+refreshMediaDevices().catch(() => {});

@@ -27,6 +27,7 @@ camera stream is available.
 - Record the selected frame.
 - Record all armed frames from the current camera source.
 - Import an Ableton mix or rough audio file for preview.
+- Use Ableton MIDI Start/Stop to record takes or restart video wall playback.
 
 ## Important prototype limits
 

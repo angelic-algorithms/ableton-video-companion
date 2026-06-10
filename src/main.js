@@ -7,7 +7,8 @@ const state = {
   recordings: new Map(),
   midiAccess: null,
   midiInputId: "",
-  midiConnected: false
+  midiConnected: false,
+  transportMode: "record"
 };
 
 const els = {
@@ -26,6 +27,7 @@ const els = {
   cameraStatus: document.querySelector("#cameraStatus"),
   bridgeStatus: document.querySelector("#bridgeStatus"),
   connectMidiButton: document.querySelector("#connectMidiButton"),
+  transportModeSelect: document.querySelector("#transportModeSelect"),
   midiInputSelect: document.querySelector("#midiInputSelect"),
   midiLog: document.querySelector("#midiLog")
 };
@@ -220,14 +222,12 @@ function handleMidiMessage(event) {
   const messageType = status & 0xff;
 
   if (messageType === 0xfa) {
-    recordArmedFramesFromMidi();
-    addMidiLog("MIDI Start -> record armed frames");
+    handleMidiStart();
     return;
   }
 
   if (messageType === 0xfc) {
-    stopRecording();
-    addMidiLog("MIDI Stop -> stop recording");
+    handleMidiStop();
     return;
   }
 
@@ -238,6 +238,28 @@ function handleMidiMessage(event) {
       addMidiLog(`Note ${data1} -> frame ${frameId}`);
     }
   }
+}
+
+function handleMidiStart() {
+  if (state.transportMode === "playback") {
+    startWallPlayback();
+    addMidiLog("MIDI Start -> play video wall");
+    return;
+  }
+
+  recordArmedFramesFromMidi();
+  addMidiLog("MIDI Start -> record armed frames");
+}
+
+function handleMidiStop() {
+  if (state.activeRecorders.size > 0) {
+    stopRecording();
+    addMidiLog("MIDI Stop -> stop recording");
+    return;
+  }
+
+  stopWallPlayback();
+  addMidiLog("MIDI Stop -> stop playback");
 }
 
 function selectAndArmFrame(frameId) {
@@ -251,6 +273,32 @@ function selectAndArmFrame(frameId) {
 function recordArmedFramesFromMidi() {
   const armedIds = state.frames.filter((frame) => frame.armed && !frame.muted).map((frame) => frame.id);
   startRecording(armedIds.length ? armedIds : [state.selectedFrameId]);
+}
+
+function startWallPlayback() {
+  const videos = Array.from(els.frameGrid.querySelectorAll("video[src]"));
+  videos.forEach((video) => {
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  });
+
+  if (els.sessionAudio.src) {
+    els.sessionAudio.currentTime = 0;
+    els.sessionAudio.play().catch(() => {});
+  }
+}
+
+function stopWallPlayback() {
+  const videos = Array.from(els.frameGrid.querySelectorAll("video[src]"));
+  videos.forEach((video) => {
+    video.pause();
+    video.currentTime = 0;
+  });
+
+  if (els.sessionAudio.src) {
+    els.sessionAudio.pause();
+    els.sessionAudio.currentTime = 0;
+  }
 }
 
 function addMidiLog(message) {
@@ -343,6 +391,11 @@ els.connectMidiButton.addEventListener("click", () => {
   connectMidi().catch((error) => {
     els.bridgeStatus.textContent = `MIDI unavailable: ${error.message}`;
   });
+});
+
+els.transportModeSelect.addEventListener("change", () => {
+  state.transportMode = els.transportModeSelect.value;
+  addMidiLog(`Transport mode: ${state.transportMode === "playback" ? "play video wall" : "record armed frames"}`);
 });
 
 els.midiInputSelect.addEventListener("change", () => {

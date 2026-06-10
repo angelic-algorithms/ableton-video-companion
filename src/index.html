@@ -59,13 +59,20 @@
             <div class="midi-controls">
               <button id="connectMidiButton" type="button">Connect MIDI</button>
               <label>
+                Ableton transport
+                <select id="transportModeSelect">
+                  <option value="record">Record armed frames</option>
+                  <option value="playback">Play video wall</option>
+                </select>
+              </label>
+              <label>
                 MIDI input
                 <select id="midiInputSelect" disabled></select>
               </label>
             </div>
             <div class="midi-help">
               <p>Notes C1-D#2 select and arm frames 1-16.</p>
-              <p>MIDI Start records armed frames. MIDI Stop stops recording.</p>
+              <p>MIDI Start follows the selected transport mode. MIDI Stop stops recording or playback.</p>
             </div>
             <ul id="midiLog" class="midi-log" aria-label="MIDI event log"></ul>
           </div>

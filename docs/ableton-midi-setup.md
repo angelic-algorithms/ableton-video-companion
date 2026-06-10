@@ -56,8 +56,13 @@ When the app receives one of those notes, it selects and arms that frame.
 
 ## 5. Transport behavior
 
-- MIDI Start records the currently armed frames.
-- MIDI Stop stops video recording.
+The app has an **Ableton transport** mode selector:
+
+- **Record armed frames**: MIDI Start records the currently armed frames.
+- **Play video wall**: MIDI Start restarts recorded frame videos and imported
+  audio from the beginning.
+- MIDI Stop stops the active recording or stops playback and resets to the
+  beginning.
 
 This keeps Ableton as the audio recorder/mixer and the companion app as the
 video recorder. The next milestone is automatic audio refresh from Ableton mix

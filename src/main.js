@@ -7,6 +7,7 @@ const state = {
   activeRecorders: new Map(),
   recordings: new Map(),
   wallAudio: null,
+  soloFrameId: null,
   midiAccess: null,
   midiInputId: "",
   midiConnected: false,
@@ -60,19 +61,27 @@ function render() {
     const recording = state.recordings.get(frame.id);
     const isSelected = frame.id === state.selectedFrameId;
     const isRecording = state.activeRecorders.has(frame.id);
+    const isSoloed = state.soloFrameId === frame.id;
     return `
       <article class="frame ${isSelected ? "selected" : ""}" data-frame-id="${frame.id}">
         <div class="video-shell">
           ${
             recording
-              ? `<video src="${recording.url}" autoplay loop muted playsinline></video>`
+              ? `<video src="${recording.url}" autoplay loop ${isSoloed ? "" : "muted"} playsinline data-tile-video="${frame.id}"></video>`
               : `<video class="live-preview" autoplay muted playsinline></video>`
           }
           <div class="frame-badge">${isRecording ? "Recording" : `Frame ${frame.id}`}</div>
         </div>
         <div class="frame-meta">
-          <strong>${frame.trackName}</strong>
-          <span>${frame.armed ? "Armed" : "Idle"}${frame.muted ? " / Muted" : ""}</span>
+          <div>
+            <strong>${frame.trackName}</strong>
+            <span>${frame.armed ? "Armed" : "Idle"}${frame.muted ? " / Muted" : ""}${recording?.hasAudio ? " / Audio" : ""}</span>
+          </div>
+          ${
+            recording?.hasAudio
+              ? `<button class="solo-button ${isSoloed ? "active" : ""}" type="button" data-solo-frame-id="${frame.id}">${isSoloed ? "Unsolo" : "Solo"}</button>`
+              : ""
+          }
         </div>
       </article>
     `;
@@ -342,6 +351,8 @@ function recordArmedFramesFromMidi() {
 }
 
 function startWallPlayback() {
+  state.soloFrameId = null;
+  render();
   const videos = Array.from(els.frameGrid.querySelectorAll("video[src]"));
   videos.forEach((video) => {
     video.currentTime = 0;
@@ -372,6 +383,7 @@ function startWallPlayback() {
 }
 
 function stopWallPlayback() {
+  state.soloFrameId = null;
   const videos = Array.from(els.frameGrid.querySelectorAll("video[src]"));
   videos.forEach((video) => {
     video.pause();
@@ -390,6 +402,39 @@ function stopWallPlayback() {
 
   if (state.audioStream && !els.audioMonitorToggle.checked) {
     els.liveAudioMonitor.pause();
+  }
+
+  render();
+}
+
+function toggleTileSolo(frameId) {
+  const nextSoloFrameId = state.soloFrameId === frameId ? null : frameId;
+  state.soloFrameId = nextSoloFrameId;
+
+  if (nextSoloFrameId) {
+    pauseSharedPlaybackAudio();
+  } else if (state.audioStream && els.audioMonitorToggle.checked) {
+    els.liveAudioMonitor.play().catch(() => {});
+  }
+
+  render();
+
+  if (nextSoloFrameId) {
+    const soloVideo = els.frameGrid.querySelector(`[data-tile-video="${nextSoloFrameId}"]`);
+    if (soloVideo) {
+      soloVideo.currentTime = 0;
+      soloVideo.muted = false;
+      soloVideo.play().catch(() => {});
+    }
+  }
+}
+
+function pauseSharedPlaybackAudio() {
+  els.liveAudioMonitor.pause();
+  els.sessionAudio.pause();
+
+  if (state.wallAudio) {
+    state.wallAudio.pause();
   }
 }
 
@@ -457,6 +502,13 @@ els.recordAllButton.addEventListener("click", () => {
 els.stopButton.addEventListener("click", stopRecording);
 
 els.frameGrid.addEventListener("click", (event) => {
+  const soloButton = event.target.closest("[data-solo-frame-id]");
+  if (soloButton) {
+    event.stopPropagation();
+    toggleTileSolo(Number(soloButton.dataset.soloFrameId));
+    return;
+  }
+
   const frameEl = event.target.closest("[data-frame-id]");
   if (!frameEl) return;
   state.selectedFrameId = Number(frameEl.dataset.frameId);

@@ -65,6 +65,18 @@ Use one frame for one lasting Ableton track/part. Add another frame only when:
 Do not add a new frame just because you changed effects in Ableton. Effects should
 stay in Ableton and update through the live BlackHole audio path.
 
+## Soloing a tile
+
+Recorded tiles with captured audio show a **Solo** button. Soloing a tile pauses
+the shared live/mix audio and unmutes that tile's recorded media so you can hear
+the part by itself.
+
+This solo audio is the audio captured at recording time. With a normal stereo
+BlackHole feed, the app cannot isolate one Ableton track from the live mix after
+the fact. For live per-track solo that always reflects current Ableton effects,
+the next architecture step is separate per-track routing, such as multiple
+BlackHole channels, stems, or a deeper Max for Live/desktop bridge.
+
 ## Current limitations
 
 - Browser audio device names may stay generic until camera/microphone permission

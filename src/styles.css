@@ -284,9 +284,27 @@ video {
   padding: 0.7rem;
 }
 
+.frame-meta > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
 .frame-meta span {
   color: #a7adb9;
   font-size: 0.8rem;
+}
+
+.solo-button {
+  font-size: 0.78rem;
+  padding: 0.42rem 0.58rem;
+  white-space: nowrap;
+}
+
+.solo-button.active {
+  background: #d7ff5f;
+  border-color: #d7ff5f;
+  color: #101114;
 }
 
 .timeline {

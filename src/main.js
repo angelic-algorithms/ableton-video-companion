@@ -25,10 +25,12 @@ const els = {
   routingList: document.querySelector("#routingList"),
   audioImport: document.querySelector("#audioImport"),
   audioInputSelect: document.querySelector("#audioInputSelect"),
+  connectAudioButton: document.querySelector("#connectAudioButton"),
   audioMonitorToggle: document.querySelector("#audioMonitorToggle"),
   sessionAudio: document.querySelector("#sessionAudio"),
   liveAudioMonitor: document.querySelector("#liveAudioMonitor"),
   audioStatus: document.querySelector("#audioStatus"),
+  liveAudioStatus: document.querySelector("#liveAudioStatus"),
   cameraStatus: document.querySelector("#cameraStatus"),
   bridgeStatus: document.querySelector("#bridgeStatus"),
   connectMidiButton: document.querySelector("#connectMidiButton"),
@@ -128,8 +130,15 @@ async function initializeAudioInput(deviceId) {
   state.audioStream = await navigator.mediaDevices.getUserMedia(constraints);
   els.liveAudioMonitor.srcObject = state.audioStream;
   els.liveAudioMonitor.muted = !els.audioMonitorToggle.checked;
-  els.audioStatus.textContent = "Live Ableton audio input connected. Pick BlackHole here after routing Ableton to it.";
+  const label = state.audioStream.getAudioTracks()[0]?.label || "selected audio input";
+  els.liveAudioStatus.textContent = `Live audio connected: ${label}.`;
+  els.connectAudioButton.textContent = "Reconnect Audio";
   await refreshMediaDevices();
+}
+
+async function connectAudio() {
+  const selectedDeviceId = els.audioInputSelect.value;
+  await initializeAudioInput(selectedDeviceId || undefined);
 }
 
 async function refreshMediaDevices() {
@@ -152,6 +161,14 @@ async function refreshMediaDevices() {
         </option>
       `).join("")
     : "<option>No audio inputs found</option>";
+
+  if (!state.audioStream) {
+    const blackHoleInput = audioInputs.find((audioInput) => /blackhole/i.test(audioInput.label || ""));
+    if (blackHoleInput) {
+      els.audioInputSelect.value = blackHoleInput.deviceId;
+      els.liveAudioStatus.textContent = "BlackHole found. Click Connect Audio to use it.";
+    }
+  }
 }
 
 function attachLiveStreamToEmptyFrames() {
@@ -395,7 +412,16 @@ els.cameraSelect.addEventListener("change", () => {
 });
 
 els.audioInputSelect.addEventListener("change", () => {
+  if (!state.audioStream) {
+    els.liveAudioStatus.textContent = "Click Connect Audio to allow and connect this input.";
+    return;
+  }
+
   initializeAudioInput(els.audioInputSelect.value).catch(showAudioError);
+});
+
+els.connectAudioButton.addEventListener("click", () => {
+  connectAudio().catch(showAudioError);
 });
 
 els.audioMonitorToggle.addEventListener("change", () => {
@@ -482,7 +508,7 @@ function showCameraError(error) {
 
 function showAudioError(error) {
   state.audioStream = null;
-  els.audioStatus.textContent = `Live audio unavailable: ${error.message}`;
+  els.liveAudioStatus.textContent = `Live audio unavailable: ${error.message}`;
 }
 
 makeFrames(state.frameCount);

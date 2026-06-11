@@ -47,6 +47,7 @@
           Ableton audio input
           <select id="audioInputSelect"></select>
         </label>
+        <button id="connectAudioButton" type="button">Connect Audio</button>
         <label class="inline-toggle">
           <input id="audioMonitorToggle" type="checkbox">
           Monitor live audio
@@ -95,6 +96,7 @@
         <div>
           <strong>Session audio</strong>
           <p id="audioStatus">Import a rough mix or Ableton export to preview with the video wall.</p>
+          <p id="liveAudioStatus" class="substatus">Live audio input is not connected yet.</p>
         </div>
         <audio id="sessionAudio" controls></audio>
         <audio id="liveAudioMonitor" class="hidden-audio" autoplay></audio>

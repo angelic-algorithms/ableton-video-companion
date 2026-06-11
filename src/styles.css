@@ -303,6 +303,12 @@ video {
   margin-bottom: 0;
 }
 
+.timeline .substatus {
+  color: #d7ff5f;
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+}
+
 audio {
   max-width: 460px;
   width: 45vw;

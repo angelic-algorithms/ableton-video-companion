@@ -10,6 +10,9 @@ In Ableton:
 1. Open **Live > Settings > Audio**.
 2. Set **Audio Output Device** to **BlackHole**.
 
+With this basic setting, Ableton sends audio to BlackHole only. That means you
+usually will not hear Ableton directly through your speakers/headphones.
+
 If you also want to hear Ableton through your speakers/headphones at the same
 time, create a macOS **Multi-Output Device**:
 
@@ -24,8 +27,13 @@ time, create a macOS **Multi-Output Device**:
 2. Open `http://localhost:4173` in Chrome or Edge.
 3. Allow camera and microphone permissions when prompted.
 4. In **Ableton audio input**, choose **BlackHole**.
-5. Turn on **Monitor live audio** if you want to hear the incoming Ableton audio
+5. Click **Connect Audio**.
+6. Turn on **Monitor live audio** if you want to hear the incoming Ableton audio
    through the app.
+
+**IAC Driver Bus 1** is the MIDI bridge. It should appear in the MIDI input
+dropdown, not the Ableton audio input dropdown. BlackHole should appear in
+**Ableton audio input** after Chrome/Edge has microphone permission.
 
 ## 3. Record with live Ableton audio
 

@@ -28,8 +28,8 @@ camera stream is available.
 - Record all armed frames from the current camera source.
 - Import an Ableton mix or rough audio file for preview.
 - Use Ableton MIDI Start/Stop to record takes or restart video wall playback.
-- Select a live Ableton audio input, such as BlackHole, for monitoring and
-  recording.
+- Select a live Ableton audio input, such as BlackHole, as the default playback
+  and monitoring source.
 
 ## Important prototype limits
 

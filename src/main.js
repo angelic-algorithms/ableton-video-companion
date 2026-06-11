@@ -131,8 +131,11 @@ async function initializeAudioInput(deviceId) {
   els.liveAudioMonitor.srcObject = state.audioStream;
   els.liveAudioMonitor.muted = !els.audioMonitorToggle.checked;
   const label = state.audioStream.getAudioTracks()[0]?.label || "selected audio input";
-  els.liveAudioStatus.textContent = `Live audio connected: ${label}.`;
+  els.liveAudioStatus.textContent = `Live Ableton audio connected: ${label}. Playback will use this live input first.`;
   els.connectAudioButton.textContent = "Reconnect Audio";
+  if (els.audioMonitorToggle.checked) {
+    els.liveAudioMonitor.play().catch(() => {});
+  }
   await refreshMediaDevices();
 }
 
@@ -345,6 +348,13 @@ function startWallPlayback() {
     video.play().catch(() => {});
   });
 
+  if (state.audioStream) {
+    els.liveAudioMonitor.currentTime = 0;
+    els.liveAudioMonitor.muted = !els.audioMonitorToggle.checked;
+    els.liveAudioMonitor.play().catch(() => {});
+    return;
+  }
+
   if (els.sessionAudio.src) {
     els.sessionAudio.currentTime = 0;
     els.sessionAudio.play().catch(() => {});
@@ -376,6 +386,10 @@ function stopWallPlayback() {
   if (state.wallAudio) {
     state.wallAudio.pause();
     state.wallAudio.currentTime = 0;
+  }
+
+  if (state.audioStream && !els.audioMonitorToggle.checked) {
+    els.liveAudioMonitor.pause();
   }
 }
 

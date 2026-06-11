@@ -28,8 +28,8 @@ time, create a macOS **Multi-Output Device**:
 3. Allow camera and microphone permissions when prompted.
 4. In **Ableton audio input**, choose **BlackHole**.
 5. Click **Connect Audio**.
-6. Turn on **Monitor live audio** if you want to hear the incoming Ableton audio
-   through the app.
+6. **Monitor live audio** is on by default. Leave it on if you want to hear the
+   incoming Ableton audio through the app.
 
 **IAC Driver Bus 1** is the MIDI bridge. It should appear in the MIDI input
 dropdown, not the Ableton audio input dropdown. BlackHole should appear in
@@ -43,10 +43,27 @@ When BlackHole is selected, new frame recordings include:
 - the selected Ableton audio input
 
 The video tiles stay muted so multiple frame videos do not all play duplicate
-audio at the same time. During **Play video wall**, the app plays:
+audio at the same time. During **Play video wall**, the app plays audio in this
+priority order:
 
-1. the imported **Ableton mix**, if one is loaded
-2. otherwise, audio from the first recorded take that contains captured audio
+1. live Ableton audio from BlackHole, if connected
+2. otherwise, the imported **Ableton mix**, if one is loaded
+3. otherwise, audio from the first recorded take that contains captured audio
+
+This means Ableton remains the living audio source. If you change effects, volume,
+panning, or processing on the Ableton track, the app hears the updated audio
+through BlackHole without needing a new video take. If you rerecord the part, the
+app should create a new video take for that frame.
+
+## Frame and track model
+
+Use one frame for one lasting Ableton track/part. Add another frame only when:
+
+1. you are stacking a new loop or performance on top of the original video
+2. you are recording more than one track or performer at the same time
+
+Do not add a new frame just because you changed effects in Ableton. Effects should
+stay in Ableton and update through the live BlackHole audio path.
 
 ## Current limitations
 
